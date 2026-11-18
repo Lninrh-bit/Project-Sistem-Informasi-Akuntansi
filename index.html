@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Akuntansi (SIA) UMKM</title>
+    <style>
+        /* CSS Variables & Styling Reset */
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg-light: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-light); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* Top Navbar & Header */
+        header {
+            background-color: #1e293b;
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .logo { font-size: 1.25rem; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* App Layout */
+        .app-container { display: flex; flex: 1; }
+        
+        /* Sidebar Navigation */
+        aside {
+            width: 240px;
+            background-color: #ffffff;
+            border-right: 1px solid var(--border);
+            padding: 1.5rem 1rem;
+        }
+        .nav-btn {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover, .nav-btn.active {
+            background-color: #eff6ff;
+            color: var(--primary);
+        }
+
+        /* Main Workspace */
+        main { flex: 1; padding: 1.5rem; overflow-y: auto; }
+
+        /* Dashboard Grid */
+        .grid-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .stat-value { font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem; }
+
+        /* Tables & Badges */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background-color: #f1f5f9; color: var(--text-muted); font-weight: 600; }
+
+        .btn { padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 500; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge-warning { background-color: #fef3c7; color: var(--warning); }
+        .badge-danger { background-color: #fee2e2; color: var(--danger); }
+        .badge-success { background-color: #dcfce7; color: var(--success); }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-muted); }
+        .form-control { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+
+        /* POS Card View */
+        .pos-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+        .product-card { border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; background: white; cursor: pointer; transition: transform 0.1s; }
+        .product-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+
+        .section-view { display: none; }
+        .section-view.active { display: block; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">📊 SIA UMKM - Sistem Akuntansi Terintegrasi</div>
+        <div>
+            Peran Pengguna: 
+            <select id="roleSelector" class="form-control" style="width: auto; display: inline-block; padding: 0.2rem 0.5rem;" onchange="switchRole()">
+                <option value="Admin">Owner / Admin</option>
+                <option value="Kasir">Kasir</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside>
+            <button class="nav-btn active" onclick="showSection('dashboard', event)">🏠 Dashboard</button>
+            <button class="nav-btn" onclick="showSection('pos', event)">🛒 Kasir (POS)</button>
+            <button class="nav-btn admin-only" onclick="showSection('products', event)">📦 Katalog & Stok</button>
+            <button class="nav-btn admin-only" onclick="showSection('purchases', event)">🚚 Pembelian Pemasok</button>
+            <button class="nav-btn admin-only" onclick="showSection('cashflow', event)">💰 Buku Kas</button>
+        </aside>
+
+        <main>
+            <!-- DASHBOARD SECTION -->
+            <section id="dashboard" class="section-view active">
+                <h2>Dashboard Usaha</h2>
+                <br>
+                <div class="grid-stats">
+                    <div class="card">
+                        <div>Total Omzet Penjualan</div>
+                        <div class="stat-value" id="statOmzet">Rp 0</div>
+                    </div>
+                    <div class="card">
+                        <div>Saldo Kas Usaha</div>
+                        <div class="stat-value" id="statKas">Rp 0</div>
+                    </div>
+                    <div class="card">
+                        <div>Jumlah Transaksi</div>
+                        <div class="stat-value" id="statTxCount">0</div>
+                    </div>
+                    <div class="card">
+                        <div>Peringatan Stok Menipis</div>
+                        <div class="stat-value" style="color: var(--warning);" id="statLowStock">0</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>⚠️ Peringatan Stok & Tanggal Kadaluarsa</h3>
+                    <table id="alertTable">
+                        <thead>
+                            <tr>
+                                <th>Produk</th>
+                                <th>Stok Sisa</th>
+                                <th>Tgl Kadaluarsa</th>
+                                <th>Status Alert</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- POS SECTION -->
+            <section id="pos" class="section-view">
+                <h2>Kasir & Transaksi Penjualan</h2>
+                <br>
+                <div class="pos-grid">
+                    <div>
+                        <input type="text" id="posSearch" class="form-control" placeholder="Cari nama produk..." oninput="renderPOSProducts()" style="margin-bottom: 1rem;">
+                        <div class="product-grid" id="posProductGrid"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Keranjang Belanja</h3>
+                        <table id="cartTable">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Qty</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--border);">
+                        <h4>Total: <span id="cartTotal">Rp 0</span></h4>
+                        <br>
+                        <button class="btn btn-success" style="width: 100%;" onclick="checkoutPenjualan()">Bayar & Selesaikan Transaksi</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PRODUCTS SECTION -->
+            <section id="products" class="section-view">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Katalog Produk & Stok</h2>
+                    <button class="btn btn-primary" onclick="showAddProductModal()">+ Tambah Produk Baru</button>
+                </div>
+                <br>
+                <input type="text" id="prodSearch" class="form-control" placeholder="Filter nama atau kategori..." oninput="renderProductTable()" style="margin-bottom: 1rem;">
+                <table id="productTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama Barang</th>
+                            <th>Kategori</th>
+                            <th>Harga Jual</th>
+                            <th>Stok</th>
+                            <th>Tgl Kadaluarsa</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+
+            <!-- PURCHASES SECTION -->
+            <section id="purchases" class="section-view">
+                <h2>Pengadaan Stok dari Pemasok</h2>
+                <br>
+                <div class="card" style="max-width: 500px;">
+                    <h3>Input Pembelian</h3>
+                    <br>
+                    <div class="form-group">
+                        <label>Nama Pemasok</label>
+                        <input type="text" id="buySupplier" class="form-control" placeholder="Contoh: PT Distribusi Pangan">
+                    </div>
+                    <div class="form-group">
+                        <label>Pilih Produk</label>
+                        <select id="buyProductSelect" class="form-control"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Jumlah Unit Dibeli</label>
+                        <input type="number" id="buyQty" class="form-control" min="1" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Biaya Pengadaan (Rp)</label>
+                        <input type="number" id="buyTotalCost" class="form-control" placeholder="Contoh: 150000">
+                    </div>
+                    <button class="btn btn-primary" onclick="processPembelian()">Simpan Pembelian & Tambah Stok</button>
+                </div>
+            </section>
+
+            <!-- CASHFLOW SECTION -->
+            <section id="cashflow" class="section-view">
+                <h2>Buku Kas (Pemasukan & Pengeluaran)</h2>
+                <br>
+                <table id="cashTable">
+                    <thead>
+                        <tr>
+                            <th>Waktu Transaksi</th>
+                            <th>Jenis Kas</th>
+                            <th>Keterangan</th>
+                            <th>Jumlah (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC & STATE PERSISTENCE -->
+    <script>
+        let appData = {
+            role: 'Admin',
+            products: [
+                { id: 'PRD-01', name: 'Minyak Goreng 1L', category: 'Sembako', price: 18000, stock: 4, expireDate: '2026-12-01' },
+                { id: 'PRD-02', name: 'Beras Premium 5kg', category: 'Sembako', price: 72000, stock: 12, expireDate: '2027-05-15' },
+                { id: 'PRD-03', name: 'Susu UHT 250ml', category: 'Minuman', price: 7000, stock: 2, expireDate: '2026-11-25' }
+            ],
+            cart: [],
+            cashLogs: [
+                { date: new Date().toLocaleString(), type: 'Pemasukan', desc: 'Modal Awal Kas Usaha', amount: 500000 }
+            ],
+            salesHistory: []
+        };
+
+        function loadStorage() {
+            const saved = localStorage.getItem('sia_app_data');
+            if (saved) {
+                try { appData = JSON.parse(saved); } catch(e){}
+            }
+            refreshAllViews();
+        }
+
+        function saveStorage() {
+            localStorage.setItem('sia_app_data', JSON.stringify(appData));
+            refreshAllViews();
+        }
+
+        function showSection(sectionId, evt) {
+            document.querySelectorAll('.section-view').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            if(evt) evt.target.classList.add('active');
+        }
+
+        function switchRole() {
+            appData.role = document.getElementById('roleSelector').value;
+            const adminBtns = document.querySelectorAll('.admin-only');
+            if (appData.role === 'Kasir') {
+                adminBtns.forEach(btn => btn.style.display = 'none');
+                showSection('pos');
+            } else {
+                adminBtns.forEach(btn => btn.style.display = 'block');
+            }
+        }
+
+        function refreshAllViews() {
+            renderDashboard();
+            renderPOSProducts();
+            renderCart();
+            renderProductTable();
+            renderCashTable();
+            populateBuySelect();
+        }
+
+        function formatRp(val) {
+            return 'Rp ' + Number(val).toLocaleString('id-ID');
+        }
+
+        function renderDashboard() {
+            let totalOmzet = appData.salesHistory.reduce((sum, item) => sum + item.total, 0);
+            let totalKas = appData.cashLogs.reduce((sum, item) => item.type === 'Pemasukan' ? sum + item.amount : sum - item.amount, 0);
+            let lowStockCount = appData.products.filter(p => p.stock <= 5).length;
+
+            document.getElementById('statOmzet').innerText = formatRp(totalOmzet);
+            document.getElementById('statKas').innerText = formatRp(totalKas);
+            document.getElementById('statTxCount').innerText = appData.salesHistory.length;
+            document.getElementById('statLowStock').innerText = lowStockCount;
+
+            let alertTbody = document.querySelector('#alertTable tbody');
+            alertTbody.innerHTML = '';
+            appData.products.forEach(p => {
+                let isLow = p.stock <= 5;
+                let isExpiring = new Date(p.expireDate) <= new Date('2026-12-31');
+                if (isLow || isExpiring) {
+                    alertTbody.innerHTML += `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td>${p.stock}</td>
+                            <td>${p.expireDate}</td>
+                            <td>
+                                ${isLow ? '<span class="badge badge-warning">Stok Menipis</span> ' : ''}
+                                ${isExpiring ? '<span class="badge badge-danger">Kadaluarsa Dekat</span>' : ''}
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function renderPOSProducts() {
+            const query = document.getElementById('posSearch').value.toLowerCase();
+            const grid = document.getElementById('posProductGrid');
+            grid.innerHTML = '';
+            appData.products.filter(p => p.name.toLowerCase().includes(query)).forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-card" onclick="addToCart('${p.id}')">
+                        <div style="font-weight: bold;">${p.name}</div>
+                        <div style="font-size:0.8rem; color:var(--text-muted);">${p.category}</div>
+                        <div style="color:var(--primary); font-weight:bold; margin-top:0.5rem;">${formatRp(p.price)}</div>
+                        <div style="font-size:0.75rem;">Stok: ${p.stock}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(productId) {
+            const prod = appData.products.find(p => p.id === productId);
+            if (prod.stock <= 0) return alert('Stok barang ini sudah habis!');
+            
+            const cartItem = appData.cart.find(item => item.id === productId);
+            if (cartItem) {
+                if (cartItem.qty >= prod.stock) return alert('Batas persediaan stok tercapai!');
+                cartItem.qty++;
+            } else {
+                appData.cart.push({ id: prod.id, name: prod.name, price: prod.price, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const tbody = document.querySelector('#cartTable tbody');
+            tbody.innerHTML = '';
+            let total = 0;
+            appData.cart.forEach(item => {
+                let subtotal = item.price * item.qty;
+                total += subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${item.qty}</td>
+                        <td>${formatRp(subtotal)}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('cartTotal').innerText = formatRp(total);
+        }
+
+        function checkoutPenjualan() {
+            if (appData.cart.length === 0) return alert('Keranjang masih kosong!');
+            
+            let total = appData.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            // Pengurangan Stok Real-Time
+            appData.cart.forEach(cartItem => {
+                let prod = appData.products.find(p => p.id === cartItem.id);
+                if (prod) prod.stock -= cartItem.qty;
+            });
+
+            // Pencatatan Kas Masuk
+            appData.salesHistory.push({ date: new Date().toLocaleString(), total: total, items: [...appData.cart] });
+            appData.cashLogs.push({ date: new Date().toLocaleString(), type: 'Pemasukan', desc: 'Transaksi Kasir', amount: total });
+
+            appData.cart = [];
+            alert('Transaksi Penjualan Berhasil!');
+            saveStorage();
+        }
+
+        function renderProductTable() {
+            const query = document.getElementById('prodSearch').value.toLowerCase();
+            const tbody = document.querySelector('#productTable tbody');
+            tbody.innerHTML = '';
+            appData.products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)).forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.name}</td>
+                        <td>${p.category}</td>
+                        <td>${formatRp(p.price)}</td>
+                        <td>${p.stock}</td>
+                        <td>${p.expireDate}</td>
+                        <td><button class="btn btn-danger" onclick="deleteProduct('${p.id}')">Hapus</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function showAddProductModal() {
+            const name = prompt('Nama Produk:');
+            if (!name) return;
+            const category = prompt('Kategori Produk:', 'Sembako');
+            const price = Number(prompt('Harga Jual (Rp):', '10000'));
+            const stock = Number(prompt('Jumlah Stok:', '10'));
+            const expireDate = prompt('Tgl Kadaluarsa (YYYY-MM-DD):', '2027-12-31');
+
+            const newId = 'PRD-0' + (appData.products.length + 1);
+            appData.products.push({ id: newId, name, category, price, stock, expireDate });
+            saveStorage();
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Hapus produk dari katalog?')) {
+                appData.products = appData.products.filter(p => p.id !== id);
+                saveStorage();
+            }
+        }
+
+        function populateBuySelect() {
+            const select = document.getElementById('buyProductSelect');
+            select.innerHTML = '';
+            appData.products.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.name} (Stok Saat Ini: ${p.stock})</option>`;
+            });
+        }
+
+        function processPembelian() {
+            const supplier = document.getElementById('buySupplier').value;
+            const productId = document.getElementById('buyProductSelect').value;
+            const qty = Number(document.getElementById('buyQty').value);
+            const totalCost = Number(document.getElementById('buyTotalCost').value);
+
+            if (!supplier || !totalCost || qty <= 0) return alert('Lengkapi data pengadaan!');
+
+            let prod = appData.products.find(p => p.id === productId);
+            if (prod) {
+                prod.stock += qty; // Penambahan Stok Otomatis
+                appData.cashLogs.push({
+                    date: new Date().toLocaleString(),
+                    type: 'Pengeluaran',
+                    desc: `Pengadaan stok (${prod.name}) dari ${supplier}`,
+                    amount: totalCost
+                });
+                alert('Pengadaan stok berhasil dicatat!');
+                document.getElementById('buySupplier').value = '';
+                document.getElementById('buyTotalCost').value = '';
+                saveStorage();
+            }
+        }
+
+        function renderCashTable() {
+            const tbody = document.querySelector('#cashTable tbody');
+            tbody.innerHTML = '';
+            appData.cashLogs.forEach(log => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${log.date}</td>
+                        <td><span class="badge ${log.type === 'Pemasukan' ? 'badge-success' : 'badge-danger'}">${log.type}</span></td>
+                        <td>${log.desc}</td>
+                        <td style="font-weight:bold; color: ${log.type === 'Pemasukan' ? 'var(--success)' : 'var(--danger)'};">${formatRp(log.amount)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Inisialisasi Aplikasi
+        loadStorage();
+    </script>
+</body>
+</html>
